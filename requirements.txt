@@ -1,3 +1,5 @@
+streamlit #Web app framework for data science and machine learning
+
 #utility libraries
 numpy
 pandas
@@ -8,7 +10,7 @@ scikit-learn
 dlib-bin # Binary distribution of dlib
 
 git+https://github.com/ageitgey/face_recognition_models
-setuptools<70.0.0
+setuptools>=77,<82
 
 #database libraries
 supabase #Python client for Supabase
@@ -17,4 +19,8 @@ bcrypt #Password hashing library
 segno  # Qr code generator
 pillow # Image processing library
 
-streamlit #Web app framework for data science and machine learning
+
+
+webrtcvad #Voice activity detection library
+librosa #Audio processing library
+resemblyzer #Voice cloning library
