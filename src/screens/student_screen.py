@@ -115,7 +115,7 @@ def student_screen():
             st.session_state['login_type'] = None
             st.rerun()
 
-    st.header('Login using FaceID', text_alignment='center')
+    st.header('Register using FaceID', text_alignment='center')
     st.space()
     st.space()
     
