@@ -141,11 +141,12 @@ def teacher_tab_take_attendance():
         if st.button('Run Face Analysis', width='stretch', type='secondary', icon=':material/analytics:', disabled=not has_photos):
             with st.spinner('Deep scanning classroom photos...'):
                 all_detected_ids = {}
+                total_unmatched = 0
 
                 for idx, img in enumerate(st.session_state.attendance_images):
                     img_np = np.array(img.convert('RGB'))
-                    detected, _, _ = predict_attendance(img_np)
-
+                    detected, _, _, unmatched = predict_attendance(img_np)
+                    total_unmatched += unmatched
 
                     if detected:
                         for sid in detected.keys():
@@ -159,6 +160,9 @@ def teacher_tab_take_attendance():
                 if not enrolled_students:
                     st.warning('No students enrolled in this course')
                 else:
+
+                    if total_unmatched > 0:
+                        st.warning(f"{total_unmatched} face(s) across your photos didn't match any enrolled student.")
 
                     results, attendance_to_log  = [], []
 
@@ -184,7 +188,10 @@ def teacher_tab_take_attendance():
                             'is_present': bool(is_present)
                         })
 
-                    attendance_result_dialog(pd.DataFrame(results), attendance_to_log)
+                    results_df = pd.DataFrame(results)
+                    results_df['Source'] = results_df['Source'].astype(str)
+                    results_df['ID'] = results_df['ID'].astype(str)  # ID bhi mixed ho sakta hai
+                    attendance_result_dialog(results_df, attendance_to_log)
 
     with c3:
         if st.button('Use Voice Attendance', type='primary', width='stretch', icon=':material/mic:'):
