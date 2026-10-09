@@ -70,7 +70,7 @@ def student_dashboard():
         def make_unenroll_button(sid, sub):
             def unenroll_button():
                 if st.button(
-                    "Unenroll from tihs course",
+                    "Unenroll from this course",
                     type='tertiary',
                     width='stretch',
                     icon=':material/delete_forever:',
@@ -157,7 +157,7 @@ def student_screen():
             new_name = st.text_input("Enter your name", placeholder='E.g. Hamza Rizvi')
 
             st.subheader('Optional : Voice Enrollment')
-            st.info("Enroll your for voice only attendance")
+            st.info("Enroll yourself for voice only attendance")
 
 
             audio_data = None
