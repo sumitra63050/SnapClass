@@ -197,8 +197,8 @@ def teacher_tab_take_attendance():
 def delete_subject_dialog(subject_id, subject_name):
     st.warning(
         f"Are you sure you want to delete **{subject_name}**?\n\n"
-        "Is subject ke saare enrolled students aur attendance records "
-        "database se **permanently delete** ho jayenge. Ye undo nahi hoga."
+        "All enrolled students and attendance records for this subject "
+        "will be **permanently deleted** from the database. This cannot be undone."
     )
 
     c1, c2 = st.columns(2)

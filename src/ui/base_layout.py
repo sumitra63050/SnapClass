@@ -58,6 +58,7 @@ def style_base_layout():
                 font-size: 3.5rem !important;
                 line-height:1.1 !important;
                 margin-bottom:0rem !important;
+                color: black !important;
             }
                 
 
@@ -72,7 +73,33 @@ def style_base_layout():
             h3, h4, p {
                 font-family: 'Outfit', sans-serif;    
             }
-            
+
+            /* ---------- Light-blue background ke upar ka saara text BLACK ---------- */
+            [data-testid="stMain"] h3,
+            [data-testid="stMain"] h4,
+            [data-testid="stMain"] [data-testid="stWidgetLabel"] p,
+            [data-testid="stMain"] [data-testid="stWidgetLabel"] label,
+            [data-testid="stMain"] [data-testid="stCaptionContainer"],
+            [data-testid="stMain"] [data-testid="stMarkdownContainer"]:not(button *) p,
+            [data-testid="stMain"] [data-testid="stMarkdownContainer"]:not(button *) li,
+            [data-testid="stMain"] [data-testid="stExpander"] summary,
+            [data-testid="stMain"] [data-testid="stExpander"] summary p,
+            [data-testid="stMain"] [data-testid="stExpander"] summary span {
+                color: #000000 !important;
+                opacity: 1 !important;
+            }
+
+            /* Expander ka arrow aur border saaf dikhe */
+            [data-testid="stMain"] [data-testid="stExpander"] summary svg {
+                color: #000000 !important;
+                fill: #000000 !important;
+            }
+            [data-testid="stMain"] [data-testid="stExpander"] {
+                border: 1px solid rgba(0, 0, 0, 0.25) !important;
+                border-radius: 12px !important;
+            }
+
+            /* ---------- Buttons ---------- */
             button{
                 border-radius: 1.5rem !important;
                 background-color: #5865F2 !important;
@@ -99,6 +126,11 @@ def style_base_layout():
                 border: none !important;
                 transition: transform 0.25s ease-in-out !important;
                 }
+
+            /* Button ke andar ka text hamesha white rahe */
+            button p, button span {
+                color: white !important;
+            }
 
             button:hover{
                 transform :scale(1.05)}
