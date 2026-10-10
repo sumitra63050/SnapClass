@@ -95,3 +95,17 @@ def create_attendance(logs):
 def get_attendance_for_teacher(teacher_id):
     response = supabase.table('attendance_logs').select("*, subjects!inner(*)").eq('subjects.teacher_id', teacher_id).execute()
     return response.data
+
+def get_students_by_ids(student_ids):
+    # Sirf id aur naam laata hai (embeddings nahi, wo bhaari hote hain)
+    if not student_ids:
+        return []
+    response = supabase.table('students').select('student_id, name').in_('student_id', student_ids).execute()
+    return response.data
+
+
+def delete_subject(subject_id):
+    # Pehle child tables, phir subject. Cascade ho ya na ho, ye order hamesha chalta hai.
+    supabase.table('attendance_logs').delete().eq('subject_id', subject_id).execute()
+    supabase.table('subject_students').delete().eq('subject_id', subject_id).execute()
+    supabase.table('subjects').delete().eq('subject_id', subject_id).execute()

@@ -5,7 +5,11 @@ from src.ui.base_layout import style_background_dashboard, style_base_layout
 from src.components.header import header_dashboard
 from src.components.footer import footer_dashboard
 from src.components.subject_card import subject_card
-from src.database.db import check_teacher_exists, create_teacher, teacher_login, get_teacher_subjects, get_attendance_for_teacher
+from src.database.db import (
+    check_teacher_exists, create_teacher, teacher_login,
+    get_teacher_subjects, get_attendance_for_teacher,
+    get_students_by_ids, delete_subject
+)
 from src.components.dialog_create_subject import create_subject_dialog
 from src.components.dialog_share_subject import share_subject_dialog
 from src.components.dialog_add_photo import add_photos_dialog
@@ -189,6 +193,25 @@ def teacher_tab_take_attendance():
             voice_attendance_dialog(selected_subject_id)
 
 
+@st.dialog("Delete Subject")
+def delete_subject_dialog(subject_id, subject_name):
+    st.warning(
+        f"Are you sure you want to delete **{subject_name}**?\n\n"
+        "Is subject ke saare enrolled students aur attendance records "
+        "database se **permanently delete** ho jayenge. Ye undo nahi hoga."
+    )
+
+    c1, c2 = st.columns(2)
+    with c1:
+        if st.button('Cancel', width='stretch', key=f"cancel_delete_{subject_id}"):
+            st.rerun()
+    with c2:
+        if st.button('Yes, delete', type='primary', width='stretch', key=f"confirm_delete_{subject_id}"):
+            delete_subject(subject_id)
+            st.toast(f'{subject_name} deleted successfully!')
+            st.rerun()
+
+
 def teacher_tab_manage_subjects():
     teacher_id = st.session_state.teacher_data['teacher_id']
     col1, col2 = st.columns(2)
@@ -208,25 +231,35 @@ def teacher_tab_manage_subjects():
                 ("🕰️", "Classes", sub['total_classes']),
             ]
 
-            def make_share_btn(sub):
-                def share_btn():
-                    if st.button(
-                     f"Share Code: {sub['name']}",
-                   key=f"share_{sub['subject_id']}",
-                    icon=":material/share:"
-                ):
-                        share_subject_dialog(sub['name'], sub['subject_code'])
+            def make_footer(sub):
+                def footer():
+                    b1, b2 = st.columns(2)
+                    with b1:
+                        if st.button(
+                            "Share Code",
+                            key=f"share_{sub['subject_id']}",
+                            icon=":material/share:",
+                            width='stretch'
+                        ):
+                            share_subject_dialog(sub['name'], sub['subject_code'])
+                    with b2:
+                        if st.button(
+                            "Delete Subject",
+                            key=f"delete_{sub['subject_id']}",
+                            type='tertiary',
+                            icon=":material/delete_forever:",
+                            width='stretch'
+                        ):
+                            delete_subject_dialog(sub['subject_id'], sub['name'])
                     st.space()
-                return share_btn
-
-        
+                return footer
 
             subject_card(
                 name=sub['name'],
                 code=sub['subject_code'],
                 section=sub['section'],
                 stats=stats,
-                footer_callback=make_share_btn(sub)
+                footer_callback=make_footer(sub)
             )
     else:
         st.info("NO SUBJECTS FOUND. CREATE ONE ABOVE")
@@ -240,52 +273,67 @@ def teacher_tab_attendance_records():
     records = get_attendance_for_teacher(teacher_id)
 
     if not records:
+        st.info('No attendance records yet.')
         return
 
-    data = []
+    # Student ids se naam nikalo
+    student_ids = list({r['student_id'] for r in records})
+    name_map = {s['student_id']: s['name'] for s in get_students_by_ids(student_ids)}
 
+    # Har class session (subject + timestamp) ke saare students ek jagah group karo
+    sessions = {}
     for r in records:
         ts = r.get('timestamp')
 
+        dt = None
         if ts:
             dt = datetime.fromisoformat(ts)
             if dt.tzinfo is None:
                 dt = dt.replace(tzinfo=timezone.utc)
-            dt = dt.astimezone(IST)  # UTC se IST mein convert
-            ts_group = dt.strftime("%Y-%m-%dT%H:%M:%S")
-            time_str = dt.strftime("%Y-%m-%d %I:%M %p")
-        else:
-            ts_group, time_str = None, "N/A"
+            dt = dt.astimezone(IST)  # UTC se IST
 
-        data.append({
-            "ts_group": ts_group,
-            "Time": time_str,
-            "Subject": r['subjects']['name'],
-            "Subject Code": r['subjects']['subject_code'],
-            "is_present": bool(r.get('is_present', False))
+        key = (r['subject_id'], ts)
+        if key not in sessions:
+            sessions[key] = {
+                'dt': dt,
+                'subject': r['subjects']['name'],
+                'code': r['subjects']['subject_code'],
+                'rows': []
+            }
+
+        is_present = bool(r.get('is_present', False))
+        sessions[key]['rows'].append({
+            'Name': name_map.get(r['student_id'], f"Student {r['student_id']}"),
+            'Status': '✅ Present' if is_present else '❌ Absent',
+            'present': is_present
         })
 
-    df = pd.DataFrame(data)
+    # Subject filter
+    subject_labels = sorted({f"{s['subject']} - {s['code']}" for s in sessions.values()})
+    selected = st.selectbox('Filter by subject', ['All subjects'] + subject_labels, key='records_subject_filter')
 
-    summary = (
-        df.groupby(['ts_group', 'Time', 'Subject', 'Subject Code'])
-        .agg(
-            Present_Count=('is_present', 'sum'),
-            Total_Count=('is_present', 'count')
-        ).reset_index()
-    )
+    # Naye session upar
+    oldest = datetime.min.replace(tzinfo=timezone.utc)
+    ordered = sorted(sessions.values(), key=lambda s: s['dt'] or oldest, reverse=True)
 
-    summary['Attendance Stats'] = (
-        "✅ " + summary['Present_Count'].astype(str) + " /"
-        + summary['Total_Count'].astype(str) + ' Students'
-    )
+    shown = 0
+    for s in ordered:
+        label = f"{s['subject']} - {s['code']}"
+        if selected != 'All subjects' and selected != label:
+            continue
 
-    display_df = (
-        summary.sort_values(by='ts_group', ascending=False)
-        [['Time', 'Subject', 'Subject Code', 'Attendance Stats']]
-    )
+        present_count = sum(1 for row in s['rows'] if row['present'])
+        total = len(s['rows'])
+        time_str = s['dt'].strftime("%Y-%m-%d %I:%M %p") if s['dt'] else "N/A"
 
-    st.dataframe(display_df, width='stretch', hide_index=True)
+        with st.expander(f"{time_str}  |  {label}  |  ✅ {present_count}/{total} present"):
+            rows = sorted(s['rows'], key=lambda row: (not row['present'], row['Name']))
+            df = pd.DataFrame(rows)[['Name', 'Status']]
+            st.dataframe(df, width='stretch', hide_index=True)
+        shown += 1
+
+    if shown == 0:
+        st.info('No records for this subject.')
 
 
 def login_teacher(username, password):
