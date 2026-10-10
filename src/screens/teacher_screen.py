@@ -198,7 +198,7 @@ def delete_subject_dialog(subject_id, subject_name):
     st.warning(
         f"Are you sure you want to delete **{subject_name}**?\n\n"
         "All enrolled students and attendance records for this subject "
-        "will be **permanently deleted**. This cannot be undone."
+        "will be **permanently deleted**"
     )
 
     c1, c2 = st.columns(2)
