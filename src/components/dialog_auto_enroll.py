@@ -9,10 +9,11 @@ import time
 def auto_enroll_dialog(subject_code):
     student_id = st.session_state.student_data['student_id']
 
+    subject_code = subject_code.strip()
 
     res = supabase.table('subjects').select('subject_id, name').eq('subject_code', subject_code).execute()
     if not res.data:
-        st.error('Subject Code not found!')
+        st.error('Subject not found. Please check the code, or ask your teacher to create the subject first.')
         if st.button('Close'):
             st.query_params.clear()
             st.rerun()
@@ -26,7 +27,7 @@ def auto_enroll_dialog(subject_code):
             st.query_params.clear()
             st.rerun()
         return
-    st.markdown(f'Would you like to enroll in **{subject['name']}**?')
+    st.markdown(f"Would you like to enroll in **{subject['name']}**?")
 
     col1, col2 = st.columns(2)
 
