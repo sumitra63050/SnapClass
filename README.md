@@ -2,7 +2,7 @@
 
 SnapClass makes classroom attendance fast. A teacher uploads one or more classroom photos, the app detects every face, matches each one against enrolled students, and records who was present and who was absent. No roll call needed.
 
-**Live Demo:** https://snapclasss-digital-attendance.streamlit.app/
+**Live Demo:** https://snapclass-digital-attendance.streamlit.app/
 
 
 
